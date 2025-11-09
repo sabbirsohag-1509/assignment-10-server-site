@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const port = process.env.PORT || 5000;
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 
 app.get('/', (req, res) => {
@@ -44,6 +44,20 @@ async function run() {
     //GET
     app.get("/properties", async (req, res) => {
       const result = await propertiesCollection.find().toArray();
+      res.send(result);
+    })
+
+    //GET latest-6 properties
+    app.get("/latest-properties", async (req, res) => {
+      const result = await propertiesCollection.find().sort({postedDate: -1}).limit(6).toArray();
+      res.send(result);
+    })
+
+    //FindONe
+    app.get("/propertyDetails/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await propertiesCollection.findOne(query);
       res.send(result);
     })
 
