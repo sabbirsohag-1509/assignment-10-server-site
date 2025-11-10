@@ -61,6 +61,13 @@ async function run() {
       res.send(result);
     })
 
+    //
+    app.get("/my-properties", async (req, res) => {
+      const email = req.query.email;
+      const result = await propertiesCollection.find({userEmail: email}).toArray();
+      res.send(result)
+    })
+
 
 
     await client.db("admin").command({ ping: 1 });
