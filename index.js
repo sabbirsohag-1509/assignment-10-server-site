@@ -96,7 +96,16 @@ async function run() {
       const query = { _id: new ObjectId(id) };
       const result = await propertiesCollection.deleteOne(query);
       res.send(result);
+    });
+
+    // //search api
+    app.get("/search", async (req, res) => {
+      const search_text = req.query.search;
+      const result = await propertiesCollection.find({propertyName: { $regex: search_text, $options: "i" }}).toArray();
+      res.send(result);
     })
+
+
 
 
 
