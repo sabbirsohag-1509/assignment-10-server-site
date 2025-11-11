@@ -105,6 +105,47 @@ async function run() {
       res.send(result);
     })
 
+    //sort api
+    app.get("/sort-properties", async (req, res) => {
+      const sort = req.query.sort;
+      let sortQuery = {};
+      if (sort === "priceLow") {
+        sortQuery = { price: 1 };
+      }
+      else if (sort === "priceHigh") {
+        sortQuery = { price: -1 };
+      }
+      else if (sort === "dateNew") {
+        sortQuery = { postedDate: -1 };
+      }
+      else if (sort === "dateOld") {
+        sortQuery = { postedDate: 1 };
+      }
+      const result = await propertiesCollection
+    .aggregate([
+      {
+        $addFields: {
+          numericPrice: { $toDouble: "$price" },
+        },
+      },
+      {
+        $sort:
+          sort === "priceLow"
+            ? { numericPrice: 1 }
+            : sort === "priceHigh"
+            ? { numericPrice: -1 }
+            : sort === "dateNew"
+            ? { postedDate: -1 }
+            : sort === "dateOld"
+            ? { postedDate: 1 }
+            : {},
+      },
+    ])
+    .toArray();
+
+  res.send(result);
+});
+
 
 
 
