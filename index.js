@@ -98,11 +98,18 @@ async function run() {
       res.send(result);
     });
 
-    // //search api
+     //search api
     app.get("/search", async (req, res) => {
       const search_text = req.query.search;
-      const result = await propertiesCollection.find({propertyName: { $regex: search_text, $options: "i" }}).toArray();
+      if (search_text) {
+        const result = await propertiesCollection.find({propertyName: { $regex: search_text, $options: "i" }}).toArray();
       res.send(result);
+      }
+      else{
+        const result = await propertiesCollection.find().limit(6).toArray();
+        res.send(result);
+      }
+      
     })
 
     //sort api
