@@ -152,19 +152,27 @@ async function run() {
 
     /**********Review***********/
 
-
+    //post
     app.post("/review", async (req, res) => {
       const newReviews = req.body;
       const result = await reviewsCollection.insertOne(newReviews);
       res.send(result);
     })
 
+    //get
     app.get("/review/:email", async (req, res) => {
       const reviewerEmail = req.params.email;
       const result = await reviewsCollection.find({reviewerEmail}).toArray();
       res.send(result);
     })
   
+    //delete
+    app.delete("/review/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await reviewsCollection.deleteOne(query);
+      res.send(result);
+    })
 
 
     
