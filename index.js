@@ -30,6 +30,7 @@ async function run() {
 
     const myDB = client.db("homeNest");
     const propertiesCollection = myDB.collection("properties");
+    const reviewsCollection = myDB.collection("reviews");
 
     //POST
     app.post("/properties", async (req, res) => {
@@ -116,7 +117,7 @@ async function run() {
     app.get("/sort-properties", async (req, res) => {
       try {
         const sort = req.query.sort;
-        const limit = parseInt(req.query.limit) || 6; // default: 6 ta data
+        const limit = parseInt(req.query.limit) || 6;
         let sortStage = {};
 
         // Sorting logic
@@ -149,13 +150,34 @@ async function run() {
       }
     });
 
+    /**********Review***********/
 
 
+    app.post("/review", async (req, res) => {
+      const newReviews = req.body;
+      const result = await reviewsCollection.insertOne(newReviews);
+      res.send(result);
+    })
 
-
+    app.get("/review/:email", async (req, res) => {
+      const reviewerEmail = req.params.email;
+      const result = await reviewsCollection.find({reviewerEmail}).toArray();
+      res.send(result);
+    })
+  
 
 
     
+    //
+
+
+
+
+
+
+
+
+
 
     await client.db("admin").command({ ping: 1 });
     console.log(
