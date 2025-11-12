@@ -109,19 +109,16 @@ async function run() {
     });
 
     // Sort API
-    // Sort API (no limit)
     app.get("/sort-properties", async (req, res) => {
       try {
         const sort = req.query.sort;
         let sortStage = {};
 
-        // Sorting logic
         if (sort === "priceLow") sortStage = { numericPrice: 1 };
         else if (sort === "priceHigh") sortStage = { numericPrice: -1 };
         else if (sort === "dateNew") sortStage = { postedDate: -1 };
         else if (sort === "dateOld") sortStage = { postedDate: 1 };
 
-        // Aggregate pipeline
         const result = await propertiesCollection
           .aggregate([
             {
