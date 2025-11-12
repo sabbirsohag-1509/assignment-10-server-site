@@ -98,60 +98,56 @@ async function run() {
       res.send(result);
     });
 
-     //search api
+    //search api
     app.get("/search", async (req, res) => {
       const search_text = req.query.search;
       if (search_text) {
-        const result = await propertiesCollection.find({propertyName: { $regex: search_text, $options: "i" }}).toArray();
-      res.send(result);
-      }
-      else{
+        const result = await propertiesCollection
+          .find({ propertyName: { $regex: search_text, $options: "i" } })
+          .toArray();
+        res.send(result);
+      } else {
         const result = await propertiesCollection.find().limit(6).toArray();
         res.send(result);
       }
-      
-    })
+    });
 
-    //sort api
+    // Sort API
     app.get("/sort-properties", async (req, res) => {
-      const sort = req.query.sort;
-      let sortQuery = {};
-      if (sort === "priceLow") {
-        sortQuery = { price: 1 };
+      try {
+        const sort = req.query.sort;
+        const limit = parseInt(req.query.limit) || 6; // default: 6 ta data
+        let sortStage = {};
+
+        // Sorting logic
+        if (sort === "priceLow") sortStage = { numericPrice: 1 };
+        else if (sort === "priceHigh") sortStage = { numericPrice: -1 };
+        else if (sort === "dateNew") sortStage = { postedDate: -1 };
+        else if (sort === "dateOld") sortStage = { postedDate: 1 };
+
+        // Aggregate pipeline
+        const result = await propertiesCollection
+          .aggregate([
+            {
+              $addFields: {
+                numericPrice: { $toDouble: "$price" },
+              },
+            },
+            {
+              $sort: sortStage,
+            },
+            {
+              $limit: limit,
+            },
+          ])
+          .toArray();
+
+        res.send(result);
+      } catch (error) {
+        console.error("Sort API error:", error);
+        res.status(500).send({ message: "Server Error", error });
       }
-      else if (sort === "priceHigh") {
-        sortQuery = { price: -1 };
-      }
-      else if (sort === "dateNew") {
-        sortQuery = { postedDate: -1 };
-      }
-      else if (sort === "dateOld") {
-        sortQuery = { postedDate: 1 };
-      }
-      const result = await propertiesCollection
-    .aggregate([
-      {
-        $addFields: {
-          numericPrice: { $toDouble: "$price" },
-        },
-      },
-      {
-        $sort:
-          sort === "priceLow"
-            ? { numericPrice: 1 }
-            : sort === "priceHigh"
-            ? { numericPrice: -1 }
-            : sort === "dateNew"
-            ? { postedDate: -1 }
-            : sort === "dateOld"
-            ? { postedDate: 1 }
-            : {},
-      },
-    ])
-    .toArray();
-
-  res.send(result);
-});
+    });
 
 
 
@@ -159,6 +155,7 @@ async function run() {
 
 
 
+    
 
     await client.db("admin").command({ ping: 1 });
     console.log(
