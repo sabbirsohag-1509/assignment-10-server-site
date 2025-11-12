@@ -102,22 +102,17 @@ async function run() {
     //search api
     app.get("/search", async (req, res) => {
       const search_text = req.query.search;
-      if (search_text) {
-        const result = await propertiesCollection
-          .find({ propertyName: { $regex: search_text, $options: "i" } })
-          .toArray();
-        res.send(result);
-      } else {
-        const result = await propertiesCollection.find().limit(6).toArray();
-        res.send(result);
-      }
+      const result = await propertiesCollection
+        .find({ propertyName: { $regex: search_text, $options: "i" } })
+        .toArray();
+      res.send(result);
     });
 
     // Sort API
+    // Sort API (no limit)
     app.get("/sort-properties", async (req, res) => {
       try {
         const sort = req.query.sort;
-        const limit = parseInt(req.query.limit) || 6;
         let sortStage = {};
 
         // Sorting logic
@@ -137,9 +132,6 @@ async function run() {
             {
               $sort: sortStage,
             },
-            {
-              $limit: limit,
-            },
           ])
           .toArray();
 
@@ -157,35 +149,24 @@ async function run() {
       const newReviews = req.body;
       const result = await reviewsCollection.insertOne(newReviews);
       res.send(result);
-    })
+    });
 
     //get
     app.get("/review/:email", async (req, res) => {
       const reviewerEmail = req.params.email;
-      const result = await reviewsCollection.find({reviewerEmail}).toArray();
+      const result = await reviewsCollection.find({ reviewerEmail }).toArray();
       res.send(result);
-    })
-  
+    });
+
     //delete
     app.delete("/review/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await reviewsCollection.deleteOne(query);
       res.send(result);
-    })
+    });
 
-
-    
     //
-
-
-
-
-
-
-
-
-
 
     await client.db("admin").command({ ping: 1 });
     console.log(
