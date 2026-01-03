@@ -39,10 +39,49 @@ async function run() {
       res.send(result);
     });
 
-    //GET
+    // GET properties with pagination + filter
     app.get("/properties", async (req, res) => {
-      const result = await propertiesCollection.find().toArray();
-      res.send(result);
+      try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 8;
+        const skip = (page - 1) * limit;
+
+        const { category, city, area } = req.query;
+
+        //Filter object
+        let filterQuery = {};
+
+        if (category) {
+          filterQuery.category = category;
+        }
+
+        if (city) {
+          filterQuery.city = city;
+        }
+
+        if (area) {
+          filterQuery.area = area;
+        }
+
+        // total count (filtered)
+        const total = await propertiesCollection.countDocuments(filterQuery);
+
+        const properties = await propertiesCollection
+          .find(filterQuery)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .toArray();
+
+        res.send({
+          total,
+          page,
+          totalPages: Math.ceil(total / limit),
+          properties,
+        });
+      } catch (error) {
+        res.status(500).send({ message: "Failed to fetch properties" });
+      }
     });
 
     //GET latest-8 properties
