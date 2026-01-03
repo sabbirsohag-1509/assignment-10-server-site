@@ -202,6 +202,13 @@ async function run() {
       res.send(result);
     });
 
+    // GET /reviews/:propertyId
+    app.get("/reviews/:propertyId", async (req, res) => {
+      const { propertyId } = req.params;
+      const result = (await reviewsCollection.find({ propertyId }).sort({ postedDate: -1 }).toArray());
+      res.send(result);
+    });
+
     //
 
     await client.db("admin").command({ ping: 1 });
