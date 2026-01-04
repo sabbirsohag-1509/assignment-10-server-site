@@ -26,7 +26,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const myDB = client.db("homeNest");
     const propertiesCollection = myDB.collection("properties");
@@ -68,7 +68,7 @@ async function run() {
 
         const properties = await propertiesCollection
           .find(filterQuery)
-          .sort({ createdAt: -1 })
+          .sort({ postedDate: -1 })
           .skip(skip)
           .limit(limit)
           .toArray();
@@ -209,12 +209,102 @@ async function run() {
       res.send(result);
     });
 
-    //
+    /************************************/
+    // GET /dashboard/stats
+// GET /dashboard/stats
+app.get("/dashboard/stats", async (req, res) => {
+  try {
+    const db = client.db("homeNest");
+    const propertiesCollection = db.collection("properties");
+    const reviewsCollection = db.collection("reviews");
+    const usersCollection = db.collection("users");
+    const ordersCollection = db.collection("orders"); // revenue collection
 
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // Count documents
+    const totalProperties = await propertiesCollection.countDocuments();
+    const totalReviews = await reviewsCollection.countDocuments();
+    const totalUsers = await usersCollection.countDocuments();
+
+    // Revenue calculation
+    // 1. amount field কে numeric এ convert করি
+    // 2. Aggregate sum করি
+    const revenueData = await ordersCollection.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: { $toDouble: "$amount" } }
+        }
+      }
+    ]).toArray();
+
+    // revenueData empty হলে 0 assign
+    const totalRevenue = revenueData[0]?.totalRevenue || 0;
+
+    res.send({
+      properties: totalProperties,
+      users: totalUsers,
+      reviews: totalReviews,
+      revenue: totalRevenue
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: "Failed to fetch dashboard stats" });
+  }
+});
+
+
+
+    ////////////
+// GET /dashboard/charts
+app.get("/dashboard/charts", async (req, res) => {
+  try {
+    const db = client.db("homeNest");
+    const propertiesCollection = db.collection("properties");
+    const usersCollection = db.collection("users");
+    const ordersCollection = db.collection("orders"); // revenue যদি order collection থেকে আসে
+
+    // 1️⃣ Properties by Category
+    const propertiesByCategory = await propertiesCollection.aggregate([
+      { $group: { _id: "$category", count: { $sum: 1 } } },
+      { $project: { category: "$_id", count: 1, _id: 0 } }
+    ]).toArray();
+
+    // 2️⃣ Revenue by Month (ধরি order collection এ field: amount, createdAt)
+    const revenueByMonth = await ordersCollection.aggregate([
+      {
+        $group: {
+          _id: { $month: "$createdAt" },
+          revenue: { $sum: "$amount" }
+        }
+      },
+      { $project: { month: "$_id", revenue: 1, _id: 0 } },
+      { $sort: { month: 1 } }
+    ]).toArray();
+
+    // 3️⃣ Users Status Distribution (ধরি field: status = "active"/"inactive")
+    const usersStatus = await usersCollection.aggregate([
+      { $group: { _id: "$status", value: { $sum: 1 } } },
+      { $project: { name: "$_id", value: 1, _id: 0 } }
+    ]).toArray();
+
+    res.send({
+      propertiesByCategory,
+      revenueByMonth,
+      usersStatus
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: "Failed to fetch dashboard charts data" });
+  }
+});
+
+
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
